@@ -25,12 +25,12 @@ void read_temp() {
 //Fonction création message
 void create_message() {
   lora_json["node"] = node_id;
-  lora_json["lat"]= node_lat;
-  lora_json["lon"] = node_lon;
-  lora_json["alt"] =node_alt;
-  lora_json["bat"] = node_battery;
-  lora_json["temp"] = node_temp;
-  lora_json["hyg"] = node_hygro;
+  lora_json["latitude"]= node_lat;
+  lora_json["longitude"] = node_lon;
+  lora_json["elevation"] =node_elevation;
+  lora_json["battery"] = node_battery;
+  lora_json["temperature"] = node_temp;
+  lora_json["hygrometry"] = node_hygro;
 }
 
 

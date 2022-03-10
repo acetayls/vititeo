@@ -2,7 +2,7 @@
 #include "HTTPClient.h"
 #include "ESPDateTime.h"
 
-StaticJsonDocument<200> json_received;
+StaticJsonDocument<2048> json_received;
 
 
 void LoRa_rxMode(){
@@ -16,7 +16,7 @@ void send_json_to_server() {
     #endif
     //Check WiFi connection status
     if(WiFi.status()== WL_CONNECTED){
-      WiFiClient client;
+      WiFiClientSecure client;
       HTTPClient http;
       Serial.println("make data");
       // Data to send from json
@@ -25,12 +25,16 @@ void send_json_to_server() {
       // Send HTTP POST request
       Serial.print("send data : ");
       Serial.println(httpRequestData);
+      client.setInsecure();
       http.begin(client, serverName);
       http.addHeader("Content-Type", "application/json");
       int httpResponseCode = http.POST(httpRequestData);
+      String httpResponseString = http.getString();
 
       Serial.print("HTTP Response code: ");
       Serial.println(httpResponseCode);
+      Serial.print("HTTP Response String");
+      Serial.println(httpResponseString);
         
       // Free resources
       http.end();
@@ -49,26 +53,16 @@ void parse_message(String received){
   }
 
   else {
-      json_received["gateway"] = gatewayName;
-      json_received["mesured_at"] = "2022-03-01 10:10";
-      send_json_to_server();
+    json_received["gateway"] = gatewayName;
+    String now =  DateTime.toString();
+    json_received["measured_at"] =now;    
+    send_json_to_server();
   }
 }
 
 
 
-void onReceive(int packetSize) {
-  String message = "";
 
-  while (LoRa.available()) {
-    message += (char)LoRa.read();
-  }
-  #if DEBUG
-    Serial.print("Gateway Receive: ");
-    Serial.println(message);
-  #endif
-  parse_message(message);
-}
 
 void setupDateTime() {
 
@@ -78,7 +72,7 @@ void setupDateTime() {
   if (!DateTime.isTimeValid()) {
     Serial.println("Failed to get time from server.");
   } else {
-    Serial.printf("Date Now is %s\n", DateTime.toISOString().c_str());
+    Serial.printf("Date Now is %s\n", DateTime.toString().c_str());
     Serial.printf("Timestamp is %ld\n", DateTime.now());
   }
 }
@@ -112,12 +106,25 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   Serial.println("end setup of gateway");
-    #endif
+  #endif
 
-  LoRa.onReceive(onReceive);
-  LoRa_rxMode();
+  setupDateTime();
+
 }
 
 void loop() {
-
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    String message;
+    while (LoRa.available()) {
+      message += (char)LoRa.read();
+    }
+    #if DEBUG
+      Serial.print("Gateway Receive: ");
+      Serial.println(message);
+      Serial.print("RSSI :");
+      Serial.println(LoRa.packetRssi());
+    #endif
+    parse_message(message);
+  }
 }
